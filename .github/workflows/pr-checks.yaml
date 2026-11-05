@@ -1,0 +1,26 @@
+name: iacm-pr-checks
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: acme/harness-templates-sandbox, path: ../harness-templates-sandbox }
+      - uses: actions/checkout@v4
+        with: { repository: acme/harness-templates-prod, path: ../harness-templates-prod }
+      - uses: opentofu/setup-opentofu@v1
+      - run: pip install --quiet pyyaml
+      - run: tofu fmt -check -recursive
+      - name: Contract with templates repos
+        run: python scripts/check_contract.py ../harness-templates-sandbox ../harness-templates-prod
+      - name: Validate roots
+        run: |
+          for d in accounts/sandbox accounts/production bootstrap; do
+            (cd $d && tofu init -backend=false -input=false && tofu validate)
+          done
+      # The real review artifact is the IaCM plan: .harness/pipelines/iacm-plan.yaml runs on the PR.

@@ -1,0 +1,12 @@
+# Roles from Standard Practice section 10. Assignments of humans/groups live per account in accounts/<env>/.
+roles:
+  template_publisher:
+    name: Template Publisher
+    permissions: [core_template_view, core_template_create, core_template_edit, core_template_access, core_template_copy,
+                  core_variable_view, core_variable_edit]
+  template_consumer:
+    name: Template Consumer
+    permissions: [core_template_view, core_template_access, core_template_copy]
+  template_break_glass_delete:
+    name: Template Break Glass Delete
+    permissions: [core_template_view, core_template_delete]

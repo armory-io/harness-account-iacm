@@ -1,0 +1,4 @@
+# Sandbox runs AHEAD of base. Canary these in sandbox, then promote by moving the value into
+# base/account_variables.yaml and deleting the line here (separate PR, production apply waits for approval).
+overrides:
+  trivy_version: "0.58.0"

@@ -1,0 +1,12 @@
+# THE BASE: canonical account variables. Identifiers here are created in EVERY account (identifier parity).
+# `value` is what production runs. Sandbox runs ahead via accounts/sandbox/overrides.yaml; promoting a change
+# means moving the value here (and deleting the sandbox override), in its own PR.
+# Templates reference these as <+variable.account.NAME>; harness-templates-*/variables/required.yaml lists the
+# names they need and scripts/check_contract.py fails if any is missing here.
+variables:
+  trivy_version:
+    description: Trivy image tag used by account.run_security_scan
+    value: "0.57.1"
+  plugin_docker_version:
+    description: Docker plugin image tag used by build templates
+    value: "20.18.0"

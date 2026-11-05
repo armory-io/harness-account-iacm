@@ -1,0 +1,79 @@
+# Runs on merge to main. Sandbox is applied first; production waits for canary + platform-owner approval.
+# A PR that only touches accounts/sandbox/ changes nothing in production (its plan is a no-op there).
+# A PR that edits base/ changes both: sandbox applies, then production is held at the approval gate.
+pipeline:
+  name: IACM Promote Account Changes
+  identifier: IACM_Promote_Account_Changes
+  projectIdentifier: platform_iacm
+  orgIdentifier: default
+  stages:
+    - stage:
+        name: Apply Sandbox
+        identifier: Apply_Sandbox
+        type: IACM
+        spec:
+          workspace: account_sandbox
+          cloneCodebase: true
+          platform: { os: Linux, arch: Amd64 }
+          runtime: { type: Cloud, spec: {} }
+          execution:
+            steps:
+              - step: { type: IACMTerraformPlugin, name: init, identifier: init, timeout: 10m, spec: { command: init } }
+              - step: { type: IACMTerraformPlugin, name: plan, identifier: plan, timeout: 10m, spec: { command: plan } }
+              - step: { type: IACMApproval, name: approve, identifier: approve, timeout: 1h, spec: { autoApprove: true } }   # sandbox: auto
+              - step: { type: IACMTerraformPlugin, name: apply, identifier: apply, timeout: 10m, spec: { command: apply } }
+    - stage:
+        name: Canary Templates
+        identifier: Canary_Templates
+        type: CI
+        spec:
+          cloneCodebase: false
+          platform: { os: Linux, arch: Amd64 }
+          runtime: { type: Cloud, spec: {} }
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run Template Canaries
+                  identifier: Run_Template_Canaries
+                  spec:
+                    shell: Bash
+                    command: |
+                      set -euo pipefail
+                      # A variable change reaches every consumer on their next run, like a bug fix: canary first.
+                      # STUB: trigger the sandbox canary pipelines (harness-templates-sandbox/tests/pipelines) and wait.
+                      echo "canary runner not implemented; failing closed" >&2; exit 1
+    - stage:
+        name: Production Sign-off
+        identifier: Production_Sign_off
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: HarnessApproval
+                  name: Platform Owner Approval
+                  identifier: Platform_Owner_Approval
+                  timeout: 1d
+                  spec:
+                    approvalMessage: Review the production plan (base/ change) and the sandbox canary results.
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      userGroups: [account._platform_owners]
+                      minimumCount: 1
+                      disallowPipelineExecutor: true
+    - stage:
+        name: Apply Production
+        identifier: Apply_Production
+        type: IACM
+        spec:
+          workspace: account_production
+          cloneCodebase: true
+          platform: { os: Linux, arch: Amd64 }
+          runtime: { type: Cloud, spec: {} }
+          execution:
+            steps:
+              - step: { type: IACMTerraformPlugin, name: init, identifier: init, timeout: 10m, spec: { command: init } }
+              - step: { type: IACMTerraformPlugin, name: plan, identifier: plan, timeout: 10m, spec: { command: plan } }
+              - step: { type: IACMApproval, name: approve, identifier: approve, timeout: 1h, spec: { autoApprove: true } }   # human gate is the stage above
+              - step: { type: IACMTerraformPlugin, name: apply, identifier: apply, timeout: 10m, spec: { command: apply } }
