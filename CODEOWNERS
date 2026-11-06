@@ -1,7 +1,7 @@
-/base/                    @acme/platform-owners
-/accounts/production/     @acme/platform-owners
-/accounts/sandbox/        @acme/template-owners @acme/platform-owners
-/bootstrap/               @acme/platform-owners
-/.harness/                @acme/platform-owners
-/scripts/                 @acme/platform-owners
-/CODEOWNERS               @acme/platform-owners
+/base/                    @armory-io/platform-owners
+/accounts/production/     @armory-io/platform-owners
+/accounts/sandbox/        @armory-io/template-owners @armory-io/platform-owners
+/bootstrap/               @armory-io/platform-owners
+/.harness/                @armory-io/platform-owners
+/scripts/                 @armory-io/platform-owners
+/CODEOWNERS               @armory-io/platform-owners

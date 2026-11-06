@@ -10,9 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
-        with: { repository: acme/harness-templates-sandbox, path: ../harness-templates-sandbox }
+        with: { repository: armory-io/harness-templates-sandbox, path: ../harness-templates-sandbox }
       - uses: actions/checkout@v4
-        with: { repository: acme/harness-templates-prod, path: ../harness-templates-prod }
+        with: { repository: armory-io/harness-templates-prod, path: ../harness-templates-prod }
       - uses: opentofu/setup-opentofu@v1
       - run: pip install --quiet pyyaml
       - run: tofu fmt -check -recursive
