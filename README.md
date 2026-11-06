@@ -12,6 +12,8 @@ bootstrap/                 one-time: creates the IaCM workspaces (account_sandbo
 scripts/check_contract.py  templates repos' required variables must exist in base; overrides may not invent ids
 ```
 
+Program overview, flow diagram, demo script and verification status: [docs/PROMOTION-OVERVIEW.md](docs/PROMOTION-OVERVIEW.md).
+
 ## How "base -> production" works
 
 1. **Identifier parity by construction.** Both account roots instantiate the same `base/` module over the same
