@@ -9,15 +9,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The default GITHUB_TOKEN cannot read other private repos: mint a read-only token from a GitHub App
+      # (secrets APP_ID / APP_PRIVATE_KEY, installed on both templates repos with Contents: read).
+      - id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: armory-io
+          repositories: harness-templates-sandbox,harness-templates-prod
+      # checkout paths must be inside the workspace
       - uses: actions/checkout@v4
-        with: { repository: armory-io/harness-templates-sandbox, path: ../harness-templates-sandbox }
+        with: { repository: armory-io/harness-templates-sandbox, path: .templates/sandbox, token: "${{ steps.app.outputs.token }}" }
       - uses: actions/checkout@v4
-        with: { repository: armory-io/harness-templates-prod, path: ../harness-templates-prod }
+        with: { repository: armory-io/harness-templates-prod, path: .templates/prod, token: "${{ steps.app.outputs.token }}" }
       - uses: opentofu/setup-opentofu@v1
       - run: pip install --quiet pyyaml
-      - run: tofu fmt -check -recursive
+      - run: tofu fmt -check -recursive base accounts bootstrap
       - name: Contract with templates repos
-        run: python scripts/check_contract.py ../harness-templates-sandbox ../harness-templates-prod
+        run: python scripts/check_contract.py $PWD/.templates/sandbox $PWD/.templates/prod
       - name: Validate roots
         run: |
           for d in accounts/sandbox accounts/production bootstrap; do
