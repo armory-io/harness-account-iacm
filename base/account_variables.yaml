@@ -25,9 +25,6 @@ variables:
   PUBLISH_KEY_SECRET_ID:
     description: Secret id of the publish service account API key
     value: "prod_publish_key"
-  TAG_TOKEN_SECRET_ID:
-    description: Secret id of the GitHub token used to tag releases
-    value: "prod_templates_tag_token"
   TERRAFORM_VERSION:
     description: hashicorp/terraform image tag used by the CI pipelines
     value: "1.9.8"
