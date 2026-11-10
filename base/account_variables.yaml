@@ -14,8 +14,8 @@ variables:
   # Platform defaults and connector/secret ids for the Template_Promotion_Management CI pipelines.
   # UPPER_CASE by convention: pipelines look these up as <+variable.account.NAME> instead of hard-coding ids.
   GITHUB_CONNECTOR_ID:
-    description: Id of the GitHub connector used to clone the templates repos
-    value: "templates_github"
+    description: Scoped ref (account.<id>) of the GitHub connector used to clone the templates repos
+    value: "account.HarnessArmoryIoGithubConnector"
   TEMPLATES_PROD_REPO:
     description: GitHub repo (org/name) holding production templates
     value: "armory-io/harness-templates-prod"
