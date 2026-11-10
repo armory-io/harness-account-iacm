@@ -10,3 +10,21 @@ variables:
   plugin_docker_version:
     description: Docker plugin image tag used by build templates
     value: "20.18.0"
+
+  # Platform defaults and connector/secret ids for the Template_Promotion_Management CI pipelines.
+  # UPPER_CASE by convention: pipelines look these up as <+variable.account.NAME> instead of hard-coding ids.
+  GITHUB_CONNECTOR_ID:
+    description: Scoped ref (account.<id>) of the GitHub connector used to clone the templates repos
+    value: "account.HarnessArmoryIoGithubConnector"
+  TEMPLATES_PROD_REPO:
+    description: GitHub repo (org/name) holding production templates
+    value: "armory-io/harness-templates-prod"
+  TEMPLATE_ORG:
+    description: Org identifier that holds the org-scope production templates
+    value: "InternalOps"
+  PUBLISH_KEY_SECRET_ID:
+    description: Secret id of the publish service account API key
+    value: "prod_publish_key"
+  TERRAFORM_VERSION:
+    description: hashicorp/terraform image tag used by the CI pipelines
+    value: "1.9.8"
