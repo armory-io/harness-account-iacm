@@ -3,8 +3,8 @@
 pipeline:
   name: IACM Plan Account
   identifier: IACM_Plan_Account
-  projectIdentifier: platform_iacm
-  orgIdentifier: default
+  projectIdentifier: Template_Promotion_Management
+  orgIdentifier: InternalOps
   stages:
     - stage:
         name: Plan Sandbox
