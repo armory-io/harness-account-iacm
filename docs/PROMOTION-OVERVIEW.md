@@ -51,3 +51,9 @@ For the demo, "sandbox" is an org (`TemplateSandbox`) in the same Harness accoun
 - Both workspaces point at the same account id; give each its own API key if you want sandbox unable to write to prod.
 - Not demonstrated in this mode: account-variable divergence (account variables are shared, so the sandbox override only
   exists as an org-level variable), account-level isolation, and cross-account identifier parity.
+
+## Demo-only: canary bypass
+
+`iacm-promote` has a `SKIP_CANARY` input (default `false`). The canary runner is still a stub that fails closed, so
+set `SKIP_CANARY=true` to reach the production approval and apply stages. The run prints a warning, and the platform
+owner approval still applies. Remove the input when the canary runner is implemented.
