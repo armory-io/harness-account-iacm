@@ -46,7 +46,7 @@ pipeline:
                   identifier: Warn
                   spec:
                     shell: Bash
-                    command: echo "WARNING: SKIP_CANARY=true, template canaries were NOT run for this promotion"
+                    command: 'echo "WARNING - SKIP_CANARY=true, template canaries were NOT run for this promotion"'
     - stage:
         name: Canary Templates
         identifier: Canary_Templates
