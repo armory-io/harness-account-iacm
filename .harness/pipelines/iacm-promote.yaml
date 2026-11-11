@@ -6,6 +6,11 @@ pipeline:
   identifier: IACM_Promote_Account_Changes
   projectIdentifier: Template_Promotion_Management
   orgIdentifier: InternalOps
+  variables:
+    # DEMO ONLY: skips the canary stage. Remove once the canary runner is implemented. Approval still applies.
+    - name: SKIP_CANARY
+      type: String
+      value: <+input>.default(false).allowedValues(true,false)
   stages:
     - stage:
         name: Apply Sandbox
@@ -23,9 +28,32 @@ pipeline:
               - step: { type: IACMApproval, name: approve, identifier: approve, timeout: 1h, spec: { autoApprove: true } }   # sandbox: auto
               - step: { type: IACMTerraformPlugin, name: apply, identifier: apply, timeout: 10m, spec: { command: apply } }
     - stage:
+        name: Canary Bypass Warning
+        identifier: Canary_Bypass_Warning
+        type: CI
+        when:
+          pipelineStatus: Success
+          condition: <+pipeline.variables.SKIP_CANARY> == "true"
+        spec:
+          cloneCodebase: false
+          platform: { os: Linux, arch: Amd64 }
+          runtime: { type: Cloud, spec: {} }
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Warn
+                  identifier: Warn
+                  spec:
+                    shell: Bash
+                    command: 'echo "WARNING - SKIP_CANARY=true, template canaries were NOT run for this promotion"'
+    - stage:
         name: Canary Templates
         identifier: Canary_Templates
         type: CI
+        when:
+          pipelineStatus: Success
+          condition: <+pipeline.variables.SKIP_CANARY> != "true"
         spec:
           cloneCodebase: false
           platform: { os: Linux, arch: Amd64 }
