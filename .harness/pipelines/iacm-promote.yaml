@@ -114,7 +114,7 @@ pipeline:
                     approvalMessage: Review the production plan (base/ change) and the sandbox canary results.
                     includePipelineExecutionHistory: true
                     approvers:
-                      userGroups: [account._platform_owners]
+                      userGroups: [account.Harness_Account_Admins]
                       minimumCount: 1
                       disallowPipelineExecutor: true
     - stage:
