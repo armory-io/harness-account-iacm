@@ -14,11 +14,11 @@ provider "harness" {}
 
 variable "org_id" {
   type    = string
-  default = "default"
+  default = "InternalOps"
 }
 variable "project_id" {
   type    = string
-  default = "platform_iacm"
+  default = "Template_Promotion_Management"
 }
 variable "repository" {
   type    = string
@@ -26,7 +26,7 @@ variable "repository" {
 }
 variable "repository_connector" {
   type    = string
-  default = "account.iacm_repo_github"
+  default = "account.HarnessArmoryIoGithubConnector"
 }
 variable "targets" {
   description = "env => { account_id, api_key_secret }"

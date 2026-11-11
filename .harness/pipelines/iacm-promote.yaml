@@ -4,8 +4,8 @@
 pipeline:
   name: IACM Promote Account Changes
   identifier: IACM_Promote_Account_Changes
-  projectIdentifier: platform_iacm
-  orgIdentifier: default
+  projectIdentifier: Template_Promotion_Management
+  orgIdentifier: InternalOps
   stages:
     - stage:
         name: Apply Sandbox
