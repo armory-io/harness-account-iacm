@@ -1,4 +1,0 @@
-template_publisher:
-  - { identifier: template_authors, type: USER_GROUP }   # authors work in sandbox
-template_consumer:
-  - { identifier: all_engineers, type: USER_GROUP }

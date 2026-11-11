@@ -42,3 +42,12 @@ Verified locally: all repo CI scripts (positive and negative cases), YAML lint, 
 **Not verified (no Harness account):** any pipeline YAML running, IACM step types, the set-stable API call, the
 Terraform template import behavior (design open item 7), the GitHub app promotion plugin. The three canary/consumer
 scripts are fail-closed stubs. `armory-io/*` repo names, connector ids and secret ids are placeholders.
+
+## Single-account demo mode
+
+For the demo, "sandbox" is an org (`TemplateSandbox`) in the same Harness account as production (org `InternalOps`).
+- `accounts/production` manages the account-level objects (variables, roles, resource group, publisher service account).
+- `accounts/sandbox` manages only the sandbox org and org-level variables (base + overrides).
+- Both workspaces point at the same account id; give each its own API key if you want sandbox unable to write to prod.
+- Not demonstrated in this mode: account-variable divergence (account variables are shared, so the sandbox override only
+  exists as an org-level variable), account-level isolation, and cross-account identifier parity.
