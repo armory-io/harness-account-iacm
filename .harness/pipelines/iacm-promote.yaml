@@ -11,6 +11,10 @@ pipeline:
     - name: SKIP_CANARY
       type: String
       value: <+input>.default(false).allowedValues(true,false)
+    # DEMO ONLY: skips the platform-owner sign-off (the executor cannot approve their own run). Remove for real use.
+    - name: SKIP_APPROVAL
+      type: String
+      value: <+input>.default(false).allowedValues(true,false)
   stages:
     - stage:
         name: Apply Sandbox
@@ -72,9 +76,32 @@ pipeline:
                       # STUB: trigger the sandbox canary pipelines (harness-templates-sandbox/tests/pipelines) and wait.
                       echo "canary runner not implemented; failing closed" >&2; exit 1
     - stage:
+        name: Approval Bypass Warning
+        identifier: Approval_Bypass_Warning
+        type: CI
+        when:
+          pipelineStatus: Success
+          condition: <+pipeline.variables.SKIP_APPROVAL> == "true"
+        spec:
+          cloneCodebase: false
+          platform: { os: Linux, arch: Amd64 }
+          runtime: { type: Cloud, spec: {} }
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Warn
+                  identifier: Warn
+                  spec:
+                    shell: Bash
+                    command: 'echo "WARNING - SKIP_APPROVAL=true, production sign-off was NOT obtained for this promotion"'
+    - stage:
         name: Production Sign-off
         identifier: Production_Sign_off
         type: Approval
+        when:
+          pipelineStatus: Success
+          condition: <+pipeline.variables.SKIP_APPROVAL> != "true"
         spec:
           execution:
             steps:
