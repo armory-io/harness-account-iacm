@@ -1,10 +1,16 @@
-# Root module for the sandbox account. Loads the BASE and applies this account's overrides.
-# Auth comes from the IaCM workspace environment (HARNESS_ACCOUNT_ID, HARNESS_PLATFORM_API_KEY);
-# the key belongs to the TARGET account's admin service account, not the account running IaCM.
+# SANDBOX = an org inside the SAME Harness account (single-account demo; a real setup uses a separate account).
+# Account-level objects (roles, resource group, publisher service account) live only in accounts/production and are
+# shared; this root manages just the sandbox org and the org-level variables, with sandbox running ahead of base.
 provider "harness" {}
 
 variable "account_id" {
   type = string
+}
+
+variable "org_id" {
+  description = "Org identifier that plays the sandbox account"
+  type        = string
+  default     = "TemplateSandbox"
 }
 
 locals {
@@ -12,7 +18,6 @@ locals {
   overrides = try(yamldecode(file("${path.module}/overrides.yaml")).overrides, {})
 }
 
-# Overrides may only change values of identifiers the base defines (identifier parity).
 resource "terraform_data" "overrides_are_subset_of_base" {
   lifecycle {
     precondition {
@@ -22,19 +27,26 @@ resource "terraform_data" "overrides_are_subset_of_base" {
   }
 }
 
-module "account" {
-  source     = "../../base"
-  account_id = var.account_id
-  variables = {
-    for k, v in local.base : k => {
-      description = v.description
-      value       = lookup(local.overrides, k, v.value)
-    }
+resource "harness_platform_organization" "sandbox" {
+  identifier  = var.org_id
+  name        = var.org_id
+  description = "Sandbox for template authoring and canaries (promotes to the production org)"
+  depends_on  = [terraform_data.overrides_are_subset_of_base]
+}
+
+resource "harness_platform_variables" "this" {
+  for_each    = local.base
+  org_id      = harness_platform_organization.sandbox.identifier
+  identifier  = each.key
+  name        = each.key
+  description = each.value.description
+  type        = "String"
+  spec {
+    value_type  = "FIXED"
+    fixed_value = lookup(local.overrides, each.key, each.value.value)
   }
-  role_assignments = try(yamldecode(file("${path.module}/role_assignments.yaml")), {})
-  depends_on       = [terraform_data.overrides_are_subset_of_base]
 }
 
 output "variable_identifiers" {
-  value = module.account.variable_identifiers
+  value = sort(keys(harness_platform_variables.this))
 }
