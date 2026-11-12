@@ -13,6 +13,7 @@ scripts/check_contract.py  templates repos' required variables must exist in bas
 ```
 
 Program overview, flow diagram, demo script and verification status: [docs/PROMOTION-OVERVIEW.md](docs/PROMOTION-OVERVIEW.md).
+Flow diagrams (author to production, monitoring, rollback): [docs/PROMOTION-FLOW.md](docs/PROMOTION-FLOW.md).
 
 ## How "base -> production" works
 

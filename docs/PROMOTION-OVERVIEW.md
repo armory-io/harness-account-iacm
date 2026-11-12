@@ -2,6 +2,8 @@
 
 Four repos implementing *Harness Account-Level Template Promotion: Standard Practice (DRAFT)*.
 
+**Diagrams:** the current end-to-end flow, rollback paths and bad-path examples are in [PROMOTION-FLOW.md](PROMOTION-FLOW.md). The ASCII sketch below is the original design and predates GitX (templates are registered by Harness GitX now, not Terraform).
+
 | Repo | Account | Role |
 |---|---|---|
 | `harness-templates-sandbox` | sandbox | Author + test templates; hosts the promotion pipeline |
