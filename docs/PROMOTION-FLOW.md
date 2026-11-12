@@ -42,7 +42,9 @@ flowchart LR
     PR_ -. "comment: promotion PR opened" .-> SPR
     PP -. "comment: released / failed" .-> SPR
     PP --> MON["Monitoring<br/>(section 5)"]
-    H -->|decline| X(["Close the PR,<br/>nothing changes in prod"])
+    H -->|decline| X(["Close the PR unmerged:<br/>prod is untouched"])
+    X -.->|"promotion_rejected"| RV["Revert PRs opened<br/>in the sandbox repo<br/>(section 8)"]
+    RV -.-> SPR
     SCI -->|red| FIX(["Author fixes<br/>the PR"])
 ```
 
@@ -129,7 +131,7 @@ flowchart TD
         B1["Bugfix that passes every rule<br/>e.g. trivy exit-code 0,<br/>so the scan never fails"] --> B2["Merges in sandbox,<br/>rehearsed in TemplateSandbox"]
         B2 --> B3["Promotion PR<br/>in prod"]
         B3 --> B4{"AI review<br/>and owner"}
-        B4 -->|spots it| B5["Close the PR,<br/>revert in sandbox"]
+        B4 -->|spots it| B5["Close the PR;<br/>revert PRs open in<br/>sandbox automatically"]
         B4 -->|misses it| B6["Merged: see<br/>rollback, section 6"]
     end
     subgraph DIRECT["Bypassing the pipeline"]
@@ -167,7 +169,7 @@ Pick the row by *how far the change got*.
 flowchart TD
     S{"How far did<br/>it get?"} -->|"Open PR, red or wrong"| R1["Fix or close<br/>the PR"]
     S -->|"Merged in sandbox only"| R2["Revert PR in sandbox<br/>(a new commit; the next<br/>promotion carries the revert)"]
-    S -->|"Promotion PR open in prod"| R3["Close it without merging,<br/>prod untouched"]
+    S -->|"Promotion PR open in prod"| R3["Close it without merging,<br/>prod untouched; sandbox<br/>reverts open (section 8)"]
     S -->|"Promotion merged in prod"| T{"What was<br/>it?"}
     T -->|"In-place bugfix"| R4["Revert the promotion PR<br/>in prod; GitX re-syncs<br/>the file in place"]
     T -->|"New version, stable not moved"| R5["Nothing consumes it<br/>unless pinned. Leave it,<br/>or revert the file and delete<br/>the version in Harness<br/>(GitX does not sync deletes)"]
@@ -200,3 +202,42 @@ Notes:
 | Release sign-off | Platform + template owners | GitHub review/merge |
 | Report back on the sandbox PR | `scripts/promotion_status.py` | both publish/promote pipelines |
 | Account variables, roles, service accounts | `harness-account-iacm` | OpenTofu workspaces |
+
+## 8. When production rejects a promotion
+
+A promotion is a snapshot of sandbox `main`, so a change production rejects would otherwise stay on `main` and
+ride along in the next promotion, into someone else's release. Closing a promotion PR without merging therefore
+starts a clean-up.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Own as Template owner
+    participant GP as GitHub (prod repo)
+    participant HR as promotion_rejected pipeline
+    participant GS as GitHub (sandbox repo)
+    actor Dev as Author
+    participant PP as Promote pipeline
+
+    Own->>GP: close promotion PR without merging
+    GP->>HR: webhook: closed, not merged
+    HR->>HR: skip if a newer promotion already merged (superseded)
+    HR->>HR: changes = sandbox commits since the last merged promotion, up to the rejected SHA
+    loop each change, newest first
+        alt revert applies cleanly
+            HR->>GS: open revert PR, label rejected-promotion-revert
+        else conflicts with later changes
+            HR->>GS: open issue "manual revert needed", same label
+        end
+        HR->>GS: comment on the original sandbox PR: rejected, revert link
+    end
+    HR->>GP: comment: list of revert PRs
+    Note over PP,GS: While any labelled PR or issue is open,<br/>the promote pipeline fails its hold check
+    Dev->>GS: merge the revert (sandbox main is clean again)
+    GS->>PP: next push promotes without the rejected change
+    Note over Dev,GS: Closing the revert unmerged instead<br/>releases the hold and keeps the change
+```
+
+Edge cases: a change that is itself a revert or already reverted is skipped; a closed PR that a newer promotion has
+since merged counts as superseded, not rejected; a direct commit with no PR is reverted too (no sandbox PR to
+comment on, so only the revert and the prod PR comment are posted).
