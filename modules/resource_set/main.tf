@@ -1,7 +1,9 @@
 # One resource set = the resources, the resource group that selects exactly them, a RW and an RO role, and the
 # bindings of user groups to those roles. All in one apply, so a set can never exist half-bound.
 locals {
-  p = replace(var.key, "-", "_")
+  p              = replace(var.key, "-", "_")
+  ro_permissions = ["core_connector_view", "core_connector_access"]
+  rw_permissions = concat(local.ro_permissions, ["core_connector_edit", "core_connector_create", "core_connector_delete"])
 }
 
 # ---- resources (account scope) -----------------------------------------------------------------------
@@ -76,16 +78,14 @@ resource "harness_platform_roles" "ro" {
   identifier           = "rs_${local.p}_ro"
   name                 = "Resource set ${var.set.name}: read only"
   allowed_scope_levels = ["account", "organization"]
-  permissions          = ["core_connector_view", "core_connector_access"]
+  permissions          = local.ro_permissions
 }
 
 resource "harness_platform_roles" "rw" {
   identifier           = "rs_${local.p}_rw"
   name                 = "Resource set ${var.set.name}: read write"
   allowed_scope_levels = ["account", "organization"]
-  permissions = concat(harness_platform_roles.ro.permissions, [
-    "core_connector_edit", "core_connector_create", "core_connector_delete",
-  ])
+  permissions          = local.rw_permissions
 }
 
 # ---- bindings: user group -> RG -> role, one per listed org, created after both exist ---------------------
