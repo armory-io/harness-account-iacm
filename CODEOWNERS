@@ -5,3 +5,5 @@
 /.harness/                @armory-io/platform-owners
 /scripts/                 @armory-io/platform-owners
 /CODEOWNERS               @armory-io/platform-owners
+/modules/                 @armory-io/platform-owners
+/resource_sets/           @armory-io/platform-owners
