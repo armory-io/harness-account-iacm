@@ -1,0 +1,14 @@
+# Example set. Copy this file to add one. Everything below is created in the production account in one apply.
+name: Platform Shared
+description: Shared connectors for platform-managed orgs
+orgs: [InternalOps]              # orgs where the bindings are created
+github_connectors:
+  shared_github:
+    name: Shared GitHub
+    url: https://github.com/armory-io
+    application_id: "000000"       # placeholder
+    installation_id: "000000"      # placeholder
+    private_key_ref: account.shared_github_app_key
+access:
+  rw: [Harness_Account_Admins]     # user groups; nobody else sees these connectors
+  ro: []

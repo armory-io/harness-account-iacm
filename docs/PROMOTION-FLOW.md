@@ -30,7 +30,7 @@ flowchart LR
     subgraph PD["harness-templates-prod (org InternalOps)"]
         PPR[Promotion PR]
         PCI["Actions checks +<br/>pr_validate_prod:<br/>Validate, AI review, Gate"]
-        H{{"Human review<br/>CODEOWNERS sign-off"}}
+        H{{"Human review<br/>and sign-off"}}
         PM[Merge to main]
         GX2["Harness GitX<br/>registers the template<br/>in InternalOps"]
         PP["publish_production<br/>apply stable.yaml (production)"]
@@ -42,8 +42,10 @@ flowchart LR
     PR_ -. "comment: promotion PR opened" .-> SPR
     PP -. "comment: released / failed" .-> SPR
     PP --> MON["Monitoring<br/>(section 5)"]
-    H -->|decline| X([Close the PR, nothing changes in prod])
-    SCI -->|red| FIX([Author fixes the PR])
+    H -->|decline| X(["Close the PR unmerged:<br/>prod is untouched"])
+    X -.->|"promotion_rejected"| RV["Revert PRs opened<br/>in the sandbox repo<br/>(section 8)"]
+    RV -.-> SPR
+    SCI -->|red| FIX(["Author fixes<br/>the PR"])
 ```
 
 Key rules the flow encodes:
@@ -98,21 +100,21 @@ PR in sandbox and again in prod.
 
 ```mermaid
 flowchart TD
-    A[Changed template file] --> B{Git status}
-    B -->|Modified in place| C["BUGFIX<br/>inputs unchanged<br/>step/stage structure unchanged<br/>downstream pins unchanged"]
-    B -->|New version file| D{Same major as the latest?}
-    B -->|Deleted| E{Where?}
+    A[Changed template file] --> B{"Git<br/>status"}
+    B -->|Modified in place| C["BUGFIX<br/>inputs unchanged<br/>structure unchanged<br/>downstream pins unchanged"]
+    B -->|New version file| D{"Same major<br/>as the latest?"}
+    B -->|Deleted| E{"Where?"}
     B -->|Moved only| R["RELOCATION<br/>same content, new path<br/>not a promotion"]
-    D -->|"yes: v1.0 to v1.1"| F["MINOR<br/>only downstream pin versions change<br/>inputs and structure identical"]
-    D -->|"no: v1.x to v2.0"| G["MAJOR<br/>needs docs/migrations/ID_vX.Y.md<br/>pipeline templates: new identifier instead"]
-    E -->|"sandbox, version never reached production"| H[Retire allowed]
-    E -->|"prod, or reached production"| I[Rejected]
-    C --> Z{All lint rules pass?}
+    D -->|"yes: v1.0 to v1.1"| F["MINOR<br/>only downstream pin<br/>versions change;<br/>inputs and structure identical"]
+    D -->|"no: v1.x to v2.0"| G["MAJOR<br/>needs migration notes in<br/>docs/migrations/<br/>pipeline templates: new<br/>identifier instead"]
+    E -->|"sandbox, never<br/>reached production"| H["Retire allowed"]
+    E -->|"prod, or reached<br/>production"| I["Rejected"]
+    C --> Z{"Lint rules<br/>pass?"}
     F --> Z
     G --> Z
     R --> Z
-    Z -->|"image tag is an account variable<br/>account vars declared in required.yaml<br/>no org./project. references<br/>pins exact, pipeline templates follow stable"| OK([PR can merge])
-    Z -->|otherwise| NO([PR fails])
+    Z -->|"image tag is an account variable<br/>account vars in required.yaml<br/>no org or project references<br/>exact pins, pipeline templates<br/>follow stable"| OK(["PR can merge"])
+    Z -->|otherwise| NO(["PR fails"])
 ```
 
 Demo of the failing side: sandbox PR #16 (inputs changed in place + hard-coded image).
@@ -122,18 +124,18 @@ Demo of the failing side: sandbox PR #16 (inputs changed in place + hard-coded i
 ```mermaid
 flowchart TD
     subgraph CAUGHT_AUTO["Caught by automation"]
-        A1["Input added to an existing version<br/>hard-coded image tag<br/>stable moved to different inputs"] --> A2[Actions check fails in sandbox]
-        A2 --> A3[Author fixes or opens a new MAJOR]
+        A1["Input added to an<br/>existing version,<br/>hard-coded image tag,<br/>stable moved to<br/>different inputs"] --> A2["Actions check<br/>fails in sandbox"]
+        A2 --> A3["Author fixes or<br/>opens a new MAJOR"]
     end
-    subgraph CAUGHT_HUMAN["Mechanically valid but wrong"]
-        B1["Bugfix that passes every rule<br/>e.g. trivy --exit-code 0 so the scan never fails"] --> B2[Merges in sandbox, rehearsed in TemplateSandbox]
-        B2 --> B3["Promotion PR in prod"]
-        B3 --> B4{"AI review + owner"}
-        B4 -->|spots it| B5[Close the PR, revert in sandbox]
-        B4 -->|misses it| B6[Merged: see rollback, section 6]
+    subgraph CAUGHT_HUMAN["Valid but wrong"]
+        B1["Bugfix that passes every rule<br/>e.g. trivy exit-code 0,<br/>so the scan never fails"] --> B2["Merges in sandbox,<br/>rehearsed in TemplateSandbox"]
+        B2 --> B3["Promotion PR<br/>in prod"]
+        B3 --> B4{"AI review<br/>and owner"}
+        B4 -->|spots it| B5["Close the PR;<br/>revert PRs open in<br/>sandbox automatically"]
+        B4 -->|misses it| B6["Merged: see<br/>rollback, section 6"]
     end
     subgraph DIRECT["Bypassing the pipeline"]
-        C1[Hand-written change in the prod repo] --> C2["promote: title rule fails<br/>templates + stable in one PR fails<br/>CODEOWNERS needs platform + template owners"]
+        C1["Hand-written change<br/>in the prod repo"] --> C2["promote: title rule fails<br/>templates and stable<br/>in one PR fails<br/>CODEOWNERS needs<br/>platform and template owners"]
     end
 ```
 
@@ -144,12 +146,12 @@ Demo of the middle path: sandbox PR #17 (`--exit-code 0`) and the resulting prom
 ```mermaid
 flowchart LR
     M[Promotion merged in prod] --> PP[publish_production run]
-    PP -->|always| C1["Comment on the original sandbox PR<br/>released or failed + run link"]
-    PP --> GXS["Template shows the new commit<br/>in InternalOps (GitX git details)"]
-    PP --> ST["stable.yaml applied<br/>(retry until GitX registers)"]
-    GXS --> V["Harness template: Referenced By<br/>consumers see the update"]
+    PP -->|always| C1["Comment on the original<br/>sandbox PR: released or<br/>failed, with run link"]
+    PP --> GXS["Template shows the<br/>new commit in InternalOps<br/>(GitX git details)"]
+    PP --> ST["stable.yaml applied<br/>(retry until<br/>GitX registers)"]
+    GXS --> V["Harness Referenced By:<br/>consumers see the update"]
     V -.-> W["Canary pipelines in prod<br/>(runner is a stub today)"]
-    W -.-> AL["Alert / auto-open revert PR<br/>on canary or consumer failures"]
+    W -.-> AL["Alert or auto-open revert PR<br/>on canary or consumer<br/>failures"]
     style W stroke-dasharray: 5 5
     style AL stroke-dasharray: 5 5
 ```
@@ -165,14 +167,14 @@ Pick the row by *how far the change got*.
 
 ```mermaid
 flowchart TD
-    S{How far did it get?} -->|"Open PR, red or wrong"| R1[Fix or close the PR]
-    S -->|"Merged in sandbox only"| R2["Revert PR in sandbox<br/>(a new commit; the next promotion carries the revert)"]
-    S -->|"Promotion PR open in prod"| R3[Close it without merging: prod untouched]
-    S -->|"Promotion merged in prod"| T{What was it?}
-    T -->|"In-place bugfix"| R4["Revert the promotion PR in prod<br/>GitX re-syncs the file in place"]
-    T -->|"New version, stable not moved"| R5["Nothing consumes it unless pinned<br/>leave it, or revert the file and delete the<br/>version in Harness (GitX does not sync deletes)"]
-    T -->|"Stable marker moved"| R6["Revert the stable PR<br/>publish re-applies the previous marker<br/>no consumer PRs needed"]
-    R4 --> V["Verify: template git details show the revert commit,<br/>the sandbox PR gets a new released comment"]
+    S{"How far did<br/>it get?"} -->|"Open PR, red or wrong"| R1["Fix or close<br/>the PR"]
+    S -->|"Merged in sandbox only"| R2["Revert PR in sandbox<br/>(a new commit; the next<br/>promotion carries the revert)"]
+    S -->|"Promotion PR open in prod"| R3["Close it without merging,<br/>prod untouched; sandbox<br/>reverts open (section 8)"]
+    S -->|"Promotion merged in prod"| T{"What was<br/>it?"}
+    T -->|"In-place bugfix"| R4["Revert the promotion PR<br/>in prod; GitX re-syncs<br/>the file in place"]
+    T -->|"New version, stable not moved"| R5["Nothing consumes it<br/>unless pinned. Leave it,<br/>or revert the file and delete<br/>the version in Harness<br/>(GitX does not sync deletes)"]
+    T -->|"Stable marker moved"| R6["Revert the stable PR;<br/>publish re-applies the<br/>previous marker; no<br/>consumer PRs needed"]
+    R4 --> V["Verify: template git details<br/>show the revert commit,<br/>the sandbox PR gets a<br/>new released comment"]
     R6 --> V
 ```
 
@@ -200,3 +202,42 @@ Notes:
 | Release sign-off | Platform + template owners | GitHub review/merge |
 | Report back on the sandbox PR | `scripts/promotion_status.py` | both publish/promote pipelines |
 | Account variables, roles, service accounts | `harness-account-iacm` | OpenTofu workspaces |
+
+## 8. When production rejects a promotion
+
+A promotion is a snapshot of sandbox `main`, so a change production rejects would otherwise stay on `main` and
+ride along in the next promotion, into someone else's release. Closing a promotion PR without merging therefore
+starts a clean-up.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Own as Template owner
+    participant GP as GitHub (prod repo)
+    participant HR as promotion_rejected pipeline
+    participant GS as GitHub (sandbox repo)
+    actor Dev as Author
+    participant PP as Promote pipeline
+
+    Own->>GP: close promotion PR without merging
+    GP->>HR: webhook: closed, not merged
+    HR->>HR: skip if a newer promotion already merged (superseded)
+    HR->>HR: changes = sandbox commits since the last merged promotion, up to the rejected SHA
+    loop each change, newest first
+        alt revert applies cleanly
+            HR->>GS: open revert PR, label rejected-promotion-revert
+        else conflicts with later changes
+            HR->>GS: open issue "manual revert needed", same label
+        end
+        HR->>GS: comment on the original sandbox PR: rejected, revert link
+    end
+    HR->>GP: comment: list of revert PRs
+    Note over PP,GS: While any labelled PR or issue is open,<br/>the promote pipeline fails its hold check
+    Dev->>GS: merge the revert (sandbox main is clean again)
+    GS->>PP: next push promotes without the rejected change
+    Note over Dev,GS: Closing the revert unmerged instead<br/>releases the hold and keeps the change
+```
+
+Edge cases: a change that is itself a revert or already reverted is skipped; a closed PR that a newer promotion has
+since merged counts as superseded, not rejected; a direct commit with no PR is reverted too (no sandbox PR to
+comment on, so only the revert and the prod PR comment are posted).
